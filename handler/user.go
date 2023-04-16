@@ -3,6 +3,7 @@ package handler
 import (
 	"bwastartup/helper"
 	"bwastartup/user"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -96,5 +97,39 @@ func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
 	}
 
 	response := helper.APIResponse(metaMessage, http.StatusOK, "success", data)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+	file, errGet := c.FormFile("avatar")
+	if errGet != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to get image from form.", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	// id should be taken form JWT token
+	dummyId := 1
+	path := fmt.Sprintf("images/%d-%s", dummyId, file.Filename)
+
+	errUpload := c.SaveUploadedFile(file, path)
+	if errUpload != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to upload image to server.", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	_, errSave := h.userService.SaveAvatar(dummyId, path)
+	if errSave != nil {
+		data := gin.H{"is_uploaded": false}
+		response := helper.APIResponse("Failed to update data in database.", http.StatusBadRequest, "error", data)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data := gin.H{"is_uploaded": true}
+	response := helper.APIResponse("Success uploaded file to server", http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
 }
