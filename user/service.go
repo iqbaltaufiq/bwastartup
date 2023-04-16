@@ -9,6 +9,7 @@ import (
 type Service interface {
 	RegisterUser(input RegisterUserInput) (User, error)
 	Login(input UserLoginInput) (User, error)
+	IsEmailAvailable(input CheckEmailInput) (bool, error)
 }
 
 type service struct {
@@ -50,7 +51,6 @@ func (s *service) Login(input UserLoginInput) (User, error) {
 	if errFind != nil {
 		return user, errFind
 	}
-
 	if user.Id == 0 {
 		return user, errors.New("no user found for that email")
 	}
@@ -59,6 +59,16 @@ func (s *service) Login(input UserLoginInput) (User, error) {
 	if errCompare != nil {
 		return user, errCompare
 	}
-
 	return user, nil
+}
+
+func (s *service) IsEmailAvailable(input CheckEmailInput) (bool, error) {
+	user, errFind := s.repository.FindByEmail(input.Email)
+	if user.Id == 0 {
+		return true, nil
+	}
+	if errFind != nil {
+		return false, errFind
+	}
+	return false, nil
 }
