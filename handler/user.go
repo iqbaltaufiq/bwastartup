@@ -128,9 +128,9 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// id should be taken form JWT token
-	dummyId := 1
-	path := fmt.Sprintf("images/%d-%s", dummyId, file.Filename)
+	user, _ := c.MustGet("currentUser").(user.User)
+	userId := user.Id
+	path := fmt.Sprintf("images/%d-%s", userId, file.Filename)
 
 	errUpload := c.SaveUploadedFile(file, path)
 	if errUpload != nil {
@@ -140,7 +140,7 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	_, errSave := h.userService.SaveAvatar(dummyId, path)
+	_, errSave := h.userService.SaveAvatar(userId, path)
 	if errSave != nil {
 		data := gin.H{"is_uploaded": false}
 		response := helper.APIResponse("Failed to update data in database.", http.StatusBadRequest, "error", data)
