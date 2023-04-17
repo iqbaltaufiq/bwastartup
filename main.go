@@ -41,6 +41,7 @@ func main() {
 
 func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// check for bearer token in header 'Authorization'
 		authHeader := c.GetHeader("Authorization")
 		if !strings.Contains(authHeader, "Bearer") {
 			response := helper.APIResponse("Bearer not found", http.StatusUnauthorized, "error", nil)
@@ -48,12 +49,14 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 			return
 		}
 
+		// get the token from the Bearer auth
 		var jwtToken string
 		bearerToken := strings.Split(authHeader, " ")
 		if len(bearerToken) == 2 {
 			jwtToken = bearerToken[1]
 		}
 
+		// validate the token
 		token, errVal := authService.ValidateToken(jwtToken)
 		if errVal != nil {
 			response := helper.APIResponse("Invalid token", http.StatusUnauthorized, "error", nil)
@@ -61,16 +64,16 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 			return
 		}
 
-		// get the data from the claim
+		// get the user id from inside the claim/payload
 		claim, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
 			response := helper.APIResponse("Failed parsing claim", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
-
 		userId := int(claim["user_id"].(float64))
 
+		// fetch user using id from the token
 		user, errFind := userService.GetUserById(userId)
 		if errFind != nil {
 			response := helper.APIResponse("User not found", http.StatusNotFound, "error", nil)
@@ -78,6 +81,7 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 			return
 		}
 
+		// pass the user from middleware to be used in the handler
 		c.Set("currentUser", user)
 	}
 }
