@@ -1,7 +1,7 @@
 package campaign
 
 type Service interface {
-	FindCampaigns(userId int) ([]Campaign, error)
+	GetCampaigns(userId int) ([]Campaign, error)
 }
 
 type service struct {
@@ -16,7 +16,7 @@ func NewService(repository Repository) *service {
 // if client sent user_id,
 // then fetch all campaigns that belong to that user_id
 // if not, then fetch all campaigns from database
-func (s *service) FindCampaigns(userId int) ([]Campaign, error) {
+func (s *service) GetCampaigns(userId int) ([]Campaign, error) {
 	if userId != 0 {
 		campaigns, err := s.repository.FindByUserId(userId)
 		if err != nil {
