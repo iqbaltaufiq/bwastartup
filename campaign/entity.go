@@ -8,8 +8,8 @@ type Campaign struct {
 	Name             string
 	ShortDescription string
 	Description      string
-	GoalAmount       string
-	CurrentAmount    string
+	GoalAmount       int
+	CurrentAmount    int
 	Perks            string
 	BackerCount      int
 	Slug             string
