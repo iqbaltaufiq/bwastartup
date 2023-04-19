@@ -78,3 +78,34 @@ func (h *campaignHandler) CreateCampaign(c *gin.Context) {
 	response := helper.APIResponse("Success creating new campaign", http.StatusCreated, "success", campaign.FormatCampaign(newCampaign))
 	c.JSON(http.StatusCreated, response)
 }
+
+func (h *campaignHandler) UpdateCampaign(c *gin.Context) {
+	var input campaign.GetCampaignDetailInput
+	errBindURI := c.ShouldBindUri(&input)
+	if errBindURI != nil {
+		response := helper.APIResponse("Failed to parse URI", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var payload campaign.CreateCampaignInput
+	errBindJSON := c.ShouldBindJSON(&payload)
+	if errBindJSON != nil {
+		response := helper.APIResponse("Failed to parse json", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	user := c.MustGet("currentUser").(user.User)
+	payload.User = user
+
+	updatedCampaign, errUpdate := h.service.UpdateCampaign(input, payload)
+	if errUpdate != nil {
+		response := helper.APIResponse("Failed to update campaign", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := helper.APIResponse("Success updating a campaign", http.StatusOK, "success", campaign.FormatCampaign(updatedCampaign))
+	c.JSON(http.StatusOK, response)
+}

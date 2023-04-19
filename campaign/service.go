@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gosimple/slug"
@@ -10,6 +11,7 @@ type Service interface {
 	GetCampaigns(userId int) ([]Campaign, error)
 	GetCampaign(input GetCampaignDetailInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
+	UpdateCampaign(campaignId GetCampaignDetailInput, payload CreateCampaignInput) (Campaign, error)
 }
 
 type service struct {
@@ -67,4 +69,28 @@ func (s *service) CreateCampaign(input CreateCampaignInput) (Campaign, error) {
 	}
 
 	return newCampaign, nil
+}
+
+func (s *service) UpdateCampaign(campaignId GetCampaignDetailInput, payload CreateCampaignInput) (Campaign, error) {
+	campaign, errFind := s.repository.FindById(campaignId.Id)
+	if errFind != nil {
+		return campaign, errFind
+	}
+
+	if payload.User.Id != campaign.UserId {
+		return Campaign{}, errors.New("Unauthorized")
+	}
+
+	campaign.Name = payload.Name
+	campaign.ShortDescription = payload.ShortDescription
+	campaign.Description = payload.Description
+	campaign.GoalAmount = payload.GoalAmount
+	campaign.Perks = payload.Perks
+
+	updatedCampaign, errUpdate := s.repository.Update(campaign)
+	if errUpdate != nil {
+		return updatedCampaign, errUpdate
+	}
+
+	return updatedCampaign, nil
 }
