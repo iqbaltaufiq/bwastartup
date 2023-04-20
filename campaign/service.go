@@ -12,6 +12,7 @@ type Service interface {
 	GetCampaign(input GetCampaignDetailInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
 	UpdateCampaign(campaignId GetCampaignDetailInput, payload CreateCampaignInput) (Campaign, error)
+	SaveCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error)
 }
 
 type service struct {
@@ -93,4 +94,37 @@ func (s *service) UpdateCampaign(campaignId GetCampaignDetailInput, payload Crea
 	}
 
 	return updatedCampaign, nil
+}
+
+func (s *service) SaveCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error) {
+	campaign, errFind := s.repository.FindById(input.CampaignId)
+	if errFind != nil {
+		return CampaignImage{}, errFind
+	}
+
+	if campaign.UserId != input.User.Id {
+		return CampaignImage{}, errors.New("Unauthorized")
+	}
+
+	isPrimary := 0
+	if input.IsPrimary {
+		isPrimary = 1
+
+		_, errMark := s.repository.MarkImageAsNonPrimary(input.CampaignId)
+		if errMark != nil {
+			return CampaignImage{}, errMark
+		}
+	}
+
+	image := CampaignImage{}
+	image.CampaignId = input.CampaignId
+	image.IsPrimary = isPrimary
+	image.FileName = fileLocation
+
+	newImage, errCreate := s.repository.CreateImage(image)
+	if errCreate != nil {
+		return newImage, errCreate
+	}
+
+	return newImage, nil
 }
