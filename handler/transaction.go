@@ -55,3 +55,31 @@ func (h *transactionHandler) GetUserTransactions(c *gin.Context) {
 	response := helper.APIResponse("Success fetching transactions", http.StatusOK, "success", transaction.FormatUserTransactions(transactions))
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *transactionHandler) CreateTransaction(c *gin.Context) {
+	var input transaction.CreateTransactionInput
+
+	errBind := c.ShouldBindJSON(&input)
+	if errBind != nil {
+		errors := helper.FormatValidationError(errBind)
+		errMessage := gin.H{"errors": errors}
+
+		response := helper.APIResponse("Failed parsing body request", http.StatusUnprocessableEntity, "error", errMessage)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	input.User = c.MustGet("currentUser").(user.User)
+
+	newTransaction, errCreate := h.service.CreateTransaction(input)
+	if errCreate != nil {
+		errMessage := gin.H{"errors": errCreate.Error()}
+
+		response := helper.APIResponse("Failed creating transaction", http.StatusBadRequest, "error", errMessage)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	response := helper.APIResponse("A new transaction has been created", http.StatusCreated, "success", transaction.FormatTransaction(newTransaction))
+	c.JSON(http.StatusCreated, response)
+}
