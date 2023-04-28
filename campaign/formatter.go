@@ -76,6 +76,7 @@ func FormatCampaignDetail(campaign Campaign) CampaignDetailFormatter {
 	c.UserId = campaign.UserId
 	c.Name = campaign.Name
 	c.ShortDescription = campaign.ShortDescription
+	c.Description = campaign.Description
 	c.CurrentAmount = campaign.CurrentAmount
 	c.GoalAmount = campaign.GoalAmount
 	c.BackerCount = campaign.BackerCount

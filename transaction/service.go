@@ -107,6 +107,9 @@ func (s *service) ProcessPayment(input TransactionNotificationInput) error {
 	}
 
 	campaign, err := s.campaignRepository.FindById(updatedTransaction.CampaignId)
+	if err != nil {
+		return err
+	}
 
 	if updatedTransaction.Status == "paid" {
 		campaign.BackerCount = campaign.BackerCount + 1
