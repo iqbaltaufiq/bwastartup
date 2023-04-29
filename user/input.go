@@ -15,3 +15,11 @@ type UserLoginInput struct {
 type CheckEmailInput struct {
 	Email string `json:"email" binding:"required,email"`
 }
+
+type FormCreateUserInput struct {
+	Name       string `form:"name" binding:"required"`
+	Occupation string `form:"occupation" binding:"required"`
+	Email      string `form:"email" binding:"required,email"`
+	Password   string `form:"password" binding:"required"`
+	Error      string
+}
