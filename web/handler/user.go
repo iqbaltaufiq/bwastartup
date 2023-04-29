@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bwastartup/user"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -93,6 +94,43 @@ func (h *userHandler) Update(c *gin.Context) {
 
 	_, err := h.userService.UpdateUser(form)
 	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", nil)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/users")
+}
+
+func (h *userHandler) ChangeAvatar(c *gin.Context) {
+	idParam := c.Param("id")
+	id, _ := strconv.Atoi(idParam)
+
+	c.HTML(http.StatusOK, "user_avatar.html", gin.H{"Id": id})
+}
+
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+	idParam := c.Param("id")
+	id, _ := strconv.Atoi(idParam)
+
+	// get the file from input field
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", nil)
+		return
+	}
+
+	path := fmt.Sprintf("images/%d-%s", id, file.Filename)
+
+	// save image into local directory
+	errUpload := c.SaveUploadedFile(file, path)
+	if errUpload != nil {
+		c.HTML(http.StatusBadRequest, "error.html", nil)
+		return
+	}
+
+	// save image reference into database
+	_, errSave := h.userService.SaveAvatar(id, path)
+	if errSave != nil {
 		c.HTML(http.StatusBadRequest, "error.html", nil)
 		return
 	}
