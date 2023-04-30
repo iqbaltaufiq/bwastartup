@@ -3,6 +3,7 @@ package handler
 import (
 	"bwastartup/campaign"
 	"bwastartup/user"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -85,4 +86,118 @@ func (h *campaignHandler) NewImage(c *gin.Context) {
 	id, _ := strconv.Atoi(idParam)
 
 	c.HTML(http.StatusOK, "campaign_image.html", gin.H{"Id": id})
+}
+
+func (h *campaignHandler) UploadImage(c *gin.Context) {
+	// catch file from form
+	// save file to local directory
+	// insert new entry into table Campaign Image
+
+	idParam := c.Param("id")
+	id, _ := strconv.Atoi(idParam)
+
+	campaignImageInput := campaign.CreateCampaignImageInput{}
+
+	file, formErr := c.FormFile("image")
+	if formErr != nil {
+		c.HTML(http.StatusBadRequest, "error.html", nil)
+		return
+	}
+
+	campaign, fetchErr := h.campaignService.GetCampaign(campaign.GetCampaignDetailInput{Id: id})
+	if fetchErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	user, fetchErr := h.userService.GetUserById(campaign.UserId)
+	if fetchErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	path := fmt.Sprintf("images/%d-%s", campaign.UserId, file.Filename)
+
+	campaignImageInput.CampaignId = campaign.Id
+	campaignImageInput.IsPrimary = true
+	campaignImageInput.User = user
+
+	uploadErr := c.SaveUploadedFile(file, path)
+	if uploadErr != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", nil)
+		return
+	}
+
+	_, saveErr := h.campaignService.SaveCampaignImage(campaignImageInput, path)
+	if saveErr != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", nil)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/campaigns")
+}
+
+func (h *campaignHandler) Edit(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	campaignData, fetchErr := h.campaignService.GetCampaign(campaign.GetCampaignDetailInput{Id: id})
+	if fetchErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	input := campaign.FormUpdateCampaignInput{
+		Id:               campaignData.Id,
+		Name:             campaignData.Name,
+		ShortDescription: campaignData.ShortDescription,
+		Description:      campaignData.Description,
+		GoalAmount:       campaignData.GoalAmount,
+		Perks:            campaignData.Perks,
+	}
+
+	c.HTML(http.StatusOK, "campaign_edit.html", input)
+}
+
+func (h *campaignHandler) Update(c *gin.Context) {
+	var input campaign.FormUpdateCampaignInput
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	input.Id = id
+
+	bindErr := c.ShouldBind(&input)
+	if bindErr != nil {
+		input.Error = bindErr
+		input.Id = id
+		c.HTML(http.StatusInternalServerError, "campaign_edit.html", input)
+		return
+	}
+
+	campaignData, fetchErr := h.campaignService.GetCampaign(campaign.GetCampaignDetailInput{Id: id})
+	if fetchErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	user, fetchErr := h.userService.GetUserById(campaignData.UserId)
+	if fetchErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	payload := campaign.CreateCampaignInput{
+		Name:             input.Name,
+		ShortDescription: input.ShortDescription,
+		Description:      input.Description,
+		GoalAmount:       input.GoalAmount,
+		Perks:            input.Perks,
+		User:             user,
+	}
+
+	_, updateErr := h.campaignService.UpdateCampaign(campaign.GetCampaignDetailInput{Id: id}, payload)
+	if updateErr != nil {
+		c.HTML(http.StatusNotFound, "error.html", nil)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/campaigns")
 }

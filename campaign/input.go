@@ -31,3 +31,14 @@ type FormCreateCampaignInput struct {
 	UserId           int `form:"user_id" binding:"required"`
 	Error            error
 }
+
+type FormUpdateCampaignInput struct {
+	Id               int    `form:"id" binding:"required"`
+	Name             string `form:"name" binding:"required"`
+	ShortDescription string `form:"short_description" binding:"required"`
+	Description      string `form:"description" binding:"required"`
+	GoalAmount       int    `form:"goal_amount" binding:"required"`
+	Perks            string `form:"perks" binding:"required"`
+	User             user.User
+	Error            error
+}
